@@ -1,51 +1,77 @@
 import { Avatar, Box, Button, IconButton, Typography } from "@mui/material";
-import React from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { red } from "@mui/material/colors";
 import ChatItem from "../components/chat/ChatItem";
 import { IoMdSend } from "react-icons/io";
+import {
+  deleteUserChats,
+  getUserChats,
+  sendChatRequest,
+} from "../helpers/api-communicator";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
-const chatMessages = [
-  {
-    role: "user",
-    content: "Hello, AI assistant! Can you tell me the weather today?",
-  },
-  {
-    role: "assistant",
-    content: "Hello! Sure, I can help with that. May I know your location?",
-  },
-  { role: "user", content: "I am in New York City." },
-  {
-    role: "assistant",
-    content:
-      "Great! The current weather in New York City is 72°F with partly cloudy skies.",
-  },
-  {
-    role: "user",
-    content:
-      "Thanks for the information! What about the forecast for tomorrow?",
-  },
-  {
-    role: "assistant",
-    content:
-      "Tomorrow is expected to be slightly cooler with a high of 65°F and a chance of rain in the afternoon.",
-  },
-  { role: "user", content: "Perfect! Anything else I should be aware of?" },
-  {
-    role: "assistant",
-    content:
-      "No specific alerts at the moment, but I'll keep you updated if there are any changes in the weather conditions.",
-  },
-  { role: "user", content: "Thanks for your help! Have a great day." },
-  {
-    role: "assistant",
-    content:
-      "You're welcome! If you have any more questions or need assistance, feel free to ask. Have a wonderful day!",
-  },
-];
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+};
 
 const Chat = () => {
+  const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const auth = useAuth();
+  const [chatMessages, setChatMessages] = useState<Message[]>([]);
+
+  const checkKeyPress = (e) => {
+    e.preventDefault();
+    if (e.keyCode === 13) {
+      handleSubmit();
+    }
+  };
+
+  const handleSubmit = async () => {
+    const content = inputRef.current?.value as string;
+    if (inputRef && inputRef.current) {
+      inputRef.current.value = "";
+    }
+    const newMessage: Message = { role: "user", content };
+    setChatMessages((prev) => [...prev, newMessage]);
+    const chatData = await sendChatRequest(content);
+    setChatMessages([...chatData.chats]);
+  };
+
+  const handleDelete = async () => {
+    try {
+      toast.loading("Deleting chats", { id: "deletechats" });
+      await deleteUserChats();
+      setChatMessages([]);
+      toast.success("Deleted chats successfully", { id: "deletechats" });
+    } catch (error) {
+      toast.error("Deleting chats failed", { id: "deletechats" });
+    }
+  };
+
+  useLayoutEffect(() => {
+    if (auth?.isLoggedIn && auth.user) {
+      toast.loading("Loading chats", { id: "loadchats" });
+      getUserChats()
+        .then((data) => {
+          setChatMessages([...data.chats]);
+          toast.success("Successfully loaded chats", { id: "loadchats" });
+        })
+        .catch((err) => {
+          console.log(err);
+          toast.error("Loading failed", { id: "loadchats" });
+        });
+    }
+  }, [auth]);
+
+  useEffect(() => {
+    if (!auth?.user) {
+      return navigate("/login");
+    }
+  }, [auth]);
 
   return (
     <Box
@@ -61,7 +87,7 @@ const Chat = () => {
       <Box
         sx={{
           display: { md: "flex", xs: "none", sm: "none" },
-          flex: 0.2,
+          flex: 1,
           flexDirection: "column",
         }}
       >
@@ -91,7 +117,7 @@ const Chat = () => {
               : ""}
           </Avatar>
           <Typography sx={{ mx: "auto", fontFamily: "Roboto Slab" }}>
-            You are talking to a chatBOT
+            You are talking to a ChatBOT
           </Typography>
           <Typography
             sx={{ mx: "auto", fontFamily: "Roboto Slab", my: 4, p: 3 }}
@@ -100,6 +126,7 @@ const Chat = () => {
             Education, etc. But avoid sharing personal information.
           </Typography>
           <Button
+            onClick={handleDelete}
             sx={{
               width: "200px",
               my: "auto",
@@ -120,14 +147,13 @@ const Chat = () => {
       <Box
         sx={{
           display: "flex",
-          flex: { md: 0.8, xs: 1, sm: 1 },
+          flex: { md: 4, xs: 1, sm: 1 },
           flexDirection: "column",
           px: 3,
         }}
       >
         <Typography
           sx={{
-            textAlign: "center",
             fontSize: "40px",
             color: "white",
             mb: 2,
@@ -152,32 +178,35 @@ const Chat = () => {
           }}
         >
           {chatMessages.map((chat, index) => (
+            // @ts-expect-error role type check is weird
             <ChatItem content={chat.content} role={chat.role} key={index} />
           ))}
         </Box>
         <div
           style={{
             width: "100%",
-            padding: "20px",
             borderRadius: 8,
             backgroundColor: "rgb(17,27,39)",
             display: "flex",
-            marginRight: "auto",
+            margin: "auto",
           }}
         >
+          {" "}
           <input
+            onKeyUp={checkKeyPress}
+            ref={inputRef}
             type="text"
             style={{
               width: "100%",
               backgroundColor: "transparent",
-              padding: "10px",
+              padding: "30px",
               border: "none",
               outline: "none",
               color: "white",
               fontSize: "20px",
             }}
           />
-          <IconButton sx={{ ml: "auto", color: "white" }}>
+          <IconButton onClick={handleSubmit} sx={{ color: "white", mx: 1 }}>
             <IoMdSend />
           </IconButton>
         </div>
