@@ -1,5 +1,5 @@
 import { Avatar, Box, Button, IconButton, Typography } from "@mui/material";
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { red } from "@mui/material/colors";
 import ChatItem from "../components/chat/ChatItem";
@@ -23,9 +23,9 @@ const Chat = () => {
   const auth = useAuth();
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
 
-  const checkKeyPress = (e) => {
+  const checkKeyPress = (e: React.KeyboardEvent) => {
     e.preventDefault();
-    if (e.keyCode === 13) {
+    if (e.key === "Enter") {
       handleSubmit();
     }
   };
@@ -178,7 +178,6 @@ const Chat = () => {
           }}
         >
           {chatMessages.map((chat, index) => (
-            // @ts-expect-error role type check is weird
             <ChatItem content={chat.content} role={chat.role} key={index} />
           ))}
         </Box>
