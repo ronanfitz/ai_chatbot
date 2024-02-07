@@ -27,7 +27,7 @@ const ChatItem = ({
 }) => {
   const messageBlocks = extractCodeFromString(content);
   const auth = useAuth();
-  const chatBoxRef = useRef<HTMLInputElement | null>(null);
+  const chatBoxRef = useRef<HTMLElement | null>(null);
 
   const scrollToBottom = () => {
     chatBoxRef.current?.scrollIntoView({ behavior: "smooth" });
