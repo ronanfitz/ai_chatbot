@@ -2,6 +2,7 @@ import { Avatar, Box, Typography } from "@mui/material";
 import { useAuth } from "../../context/AuthContext";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { coldarkDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useEffect, useRef } from "react";
 
 function extractCodeFromString(message: string) {
   if (message.includes("```")) {
@@ -26,9 +27,19 @@ const ChatItem = ({
 }) => {
   const messageBlocks = extractCodeFromString(content);
   const auth = useAuth();
+  const chatBoxRef = useRef<HTMLInputElement | null>(null);
+
+  const scrollToBottom = () => {
+    chatBoxRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, []);
 
   return role == "assistant" ? (
     <Box
+      ref={chatBoxRef}
       sx={{
         display: "flex",
         p: 2,
@@ -60,6 +71,7 @@ const ChatItem = ({
     </Box>
   ) : (
     <Box
+      ref={chatBoxRef}
       sx={{
         display: "flex",
         p: 2,
